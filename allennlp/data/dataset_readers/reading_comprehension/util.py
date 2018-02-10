@@ -225,6 +225,7 @@ def combine_instances(instances: List[Instance]) -> Instance:
     # All instances should represent the same question.
     question_fields = [instance.fields['question'] for instance in instances]
     question_tokens = [tuple(token.text for token in field.tokens) for field in question_fields]
+    print(question_tokens)
     assert len(set(question_tokens)) == 1
 
     first_instance = instances[0]
@@ -236,7 +237,7 @@ def combine_instances(instances: List[Instance]) -> Instance:
     metadata = {
         key: []
         for instance in instances
-        for key in instance.fields['metadata'].metadata
+        for key in first_instance.fields['metadata'].metadata
     }
 
     for instance in instances:
@@ -245,3 +246,4 @@ def combine_instances(instances: List[Instance]) -> Instance:
 
     fields['metadata'] = MetadataField(metadata)
 
+    return Instance(fields)
