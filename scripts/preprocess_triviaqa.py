@@ -1,3 +1,23 @@
+"""
+Takes the raw `triviaqa-rc.tar.gz` (or an untarred version of it)
+and converts it into two JSONL files: `web-train.jsonl` and `web-dev.jsonl`.
+
+Each JSON line corresponds to a single question and has the format
+
+{
+    "id": "qw_1934",
+    "text": "what is the ... ?",
+    "tokens": [["what", 0], ...],
+    "paragraphs": {
+        "text": ["first paragraph...", "second paragraph", ...],
+        "tokens": [[["first", 0], ...], ...],
+        "token_spans": [[[62, 63]], ...],
+        "has_answers": [0],
+    },
+    "answer_texts": ["primary answer", "alternative answer"]
+}
+"""
+
 from typing import List
 import json
 import logging
@@ -23,6 +43,7 @@ from allennlp.data.tokenizers import Tokenizer
 from allennlp.data.tokenizers.token import Token, token_to_json, json_to_token
 from allennlp.data.dataset_readers.reading_comprehension import util
 from allennlp.data.dataset_readers.reading_comprehension.triviaqa import _PARAGRAPH_TOKEN
+from allennlp.data.vocabulary import Vocabulary
 
 logger = logging.getLogger(__name__)
 
