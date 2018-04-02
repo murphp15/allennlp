@@ -9,6 +9,7 @@ for working with PyTorch neural networks.
    allennlp.nn.activations
    allennlp.nn.decoding
    allennlp.nn.initializers
+   allennlp.nn.loss
    allennlp.nn.regularizers
    allennlp.nn.util
 
