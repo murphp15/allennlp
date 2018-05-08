@@ -7,7 +7,7 @@
 An [Apache 2.0](https://github.com/allenai/allennlp/blob/master/LICENSE) NLP research library, built on PyTorch,
 for developing state-of-the-art deep learning models on a wide variety of linguistic tasks.
 
-## Running AllenNLP
+## Running AllenNLP 2
 
 The preferred way to install AllenNLP is via `pip`.
 
