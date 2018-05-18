@@ -695,16 +695,17 @@ class Trainer:
 
                 # Check validation metric for early stopping
                 this_epoch_val_metric = val_metrics[self._validation_metric]
+
+                # Check validation metric to see if it's the best so far
+                if self._validation_metric_decreases:
+                    is_best_so_far = this_epoch_val_metric < min(validation_metric_per_epoch)
+                else:
+                    is_best_so_far = this_epoch_val_metric > max(validation_metric_per_epoch)
+
                 validation_metric_per_epoch.append(this_epoch_val_metric)
                 if self._should_stop_early(validation_metric_per_epoch):
                     logger.info("Ran out of patience.  Stopping training.")
                     break
-
-                # Check validation metric to see if it's the best so far
-                if self._validation_metric_decreases:
-                    is_best_so_far = this_epoch_val_metric == min(validation_metric_per_epoch)
-                else:
-                    is_best_so_far = this_epoch_val_metric == max(validation_metric_per_epoch)
             else:
                 # No validation set, so just assume it's the best so far.
                 is_best_so_far = True
