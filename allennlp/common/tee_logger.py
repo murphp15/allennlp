@@ -47,3 +47,4 @@ class TeeLogger:
     def flush(self):
         self.terminal.flush()
         self.log.flush()
+
