@@ -3,10 +3,10 @@ from torch.autograd import Variable
 
 from allennlp.nn.util import logsumexp
 
-# span_logits is (batch_size, num_paragraphs, num_tokens)
-# paragraph_mask is (batch_size, num_paragraphs)
-# actual_spans is (batch_size, num_paragraphs, num_spans)
-# actual_spans_mask is (batch_size, num_paragraphs, num_spans)
+# span_logits is        (batch_size, num_paragraphs, num_tokens)
+# paragraph_mask is     (batch_size, num_paragraphs)
+# actual_spans is       (batch_size, num_paragraphs, num_spans)
+# actual_spans_mask is  (batch_size, num_paragraphs, num_spans)
 class SharedNormLoss(torch.nn.Module):
     def forward(self,
                 span_logits: Variable,
