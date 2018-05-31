@@ -81,7 +81,7 @@ class Question(NamedTuple):
 
     @staticmethod
     def from_json(blob: JsonDict) -> 'Question':
-        logger.info(f"processing question ", blob['id'])
+        logger.info(f"processing question {blob['id']}")
         return Question(id=blob['id'],
                         text=blob['text'],
                         tokens=[json_to_token(token) for token in blob['tokens']],
