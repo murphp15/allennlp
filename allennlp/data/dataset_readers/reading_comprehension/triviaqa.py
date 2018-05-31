@@ -5,6 +5,7 @@ import pathlib
 import shutil
 import tarfile
 import tempfile
+from _random import Random
 from typing import Dict, List, Tuple, Iterator, Iterable, NamedTuple
 
 from overrides import overrides
@@ -20,7 +21,7 @@ from allennlp.data.dataset_readers.reading_comprehension import util
 from allennlp.data.token_indexers import SingleIdTokenIndexer, TokenIndexer
 from allennlp.data.tokenizers import Token, Tokenizer, WordTokenizer
 from allennlp.data.tokenizers.token import json_to_token, token_to_json, truncate_token
-
+from random import randint
 logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 
 _PARAGRAPH_TOKEN = "@@PARAGRAPH@@"
@@ -57,6 +58,7 @@ class MergedParagraphs(NamedTuple):
                                 has_answers=blob.get('has_answers'))
 
 
+
 class Question(NamedTuple):
     """
     We process each TriviaQA question into tokenized question text
@@ -79,7 +81,8 @@ class Question(NamedTuple):
 
     @staticmethod
     def from_json(blob: JsonDict) -> 'Question':
-        logger.info(f"processing question")
+        if randint(0, 1000) == 400:
+            logger.info(f"processing question")
         return Question(id=blob['id'],
                         text=blob['text'],
                         tokens=[json_to_token(token) for token in blob['tokens']],
