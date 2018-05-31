@@ -81,8 +81,7 @@ class Question(NamedTuple):
 
     @staticmethod
     def from_json(blob: JsonDict) -> 'Question':
-        if randint(0, 3000) == 400:
-            logger.info(f"processing question")
+        logger.info(f"processing question ", blob['id'])
         return Question(id=blob['id'],
                         text=blob['text'],
                         tokens=[json_to_token(token) for token in blob['tokens']],
