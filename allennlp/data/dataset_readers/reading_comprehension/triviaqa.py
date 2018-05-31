@@ -421,6 +421,8 @@ class TriviaQaReader(DatasetReader):
             logger.info(f"loading preprocessed questions from {questions_path}")
             with open(questions_path, 'r') as f:
                 questions = [Question.from_json(json.loads(line)) for line in f]
+            logger.info("finished processing questions!!!!")
+
         else:
             # Data from untarred original file.
             logger.info(f"preprocessing questions from {file_path}")
