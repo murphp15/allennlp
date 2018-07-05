@@ -1,6 +1,6 @@
 import json
 import logging
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Union, Any, Optional
 
 from overrides import overrides
 
@@ -40,6 +40,7 @@ class SquadReader(DatasetReader):
         We similarly use this for both the question and the passage.  See :class:`TokenIndexer`.
         Default is ``{"tokens": SingleIdTokenIndexer()}``.
     """
+
     def __init__(self,
                  multiparagraph: bool = False,
                  tokenizer: Tokenizer = None,
@@ -61,67 +62,69 @@ class SquadReader(DatasetReader):
             dataset = dataset_json['data']
         logger.info("Reading the dataset")
         for article in dataset:
-            for paragraph_json in article['paragraphs']:
-                paragraph = paragraph_json["context"]
-                tokenized_paragraph = self._tokenizer.tokenize(paragraph)
+            paragraphs = list(map(lambda x: (x['context']), article['paragraphs']))
+            tokenized_paragraphs = list(map(lambda x: self._tokenizer.tokenize(x), paragraphs))
 
+            spans: List[List[Tuple[int, int]]] = [None] * len(article['paragraphs'])
+            for i, paragraph_json in enumerate(article['paragraphs']):
                 for question_answer in paragraph_json['qas']:
                     question_text = question_answer["question"].strip().replace("\n", "")
                     answer_texts = [answer['text'] for answer in question_answer['answers']]
-                    span_starts = [answer['answer_start'] for answer in question_answer['answers']]
-                    span_ends = [start + len(answer) for start, answer in zip(span_starts, answer_texts)]
+                    span_starts: List[int] = [answer['answer_start'] for answer in question_answer['answers']]
+                    span_ends: List[int] = [start + len(answer) for start, answer in zip(span_starts, answer_texts)]
+                    spans[i] = zip(span_starts, span_ends)
                     instance = self.text_to_instance(question_text,
-                                                     paragraph,
-                                                     zip(span_starts, span_ends),
+                                                     paragraphs,
+                                                     spans,
                                                      answer_texts,
-                                                     tokenized_paragraph)
+                                                     tokenized_paragraphs)
                     yield instance
+
+    def to_token_spans(self, char_spans_per_para: List[Tuple[int, int]],
+                       passage_tokens: List[Token]) -> List[Tuple[int, int]]:
+        passage_offsets: List[Tuple[int, int]] = [(token.idx, token.idx + len(token.text)) for token in passage_tokens]
+        token_spans: List[Tuple[int, int]] = []
+        for char_span_start, char_span_end in char_spans_per_para:
+            (span_start, span_end), error = util.char_span_to_token_span(passage_offsets,
+                                                                         (char_span_start, char_span_end))
+            if error:
+                logger.debug("Passage tokens: %s", passage_tokens)
+                logger.debug("Answer span: (%d, %d)", char_span_start, char_span_end)
+                logger.debug("Token span: (%d, %d)", span_start, span_end)
+                logger.debug("Tokens in answer: %s", passage_tokens[span_start:span_end + 1])
+            token_spans.append((span_start, span_end))
+        return token_spans
 
     @overrides
     def text_to_instance(self,  # type: ignore
                          question_text: str,
-                         passage_text: str,
-                         char_spans: List[Tuple[int, int]] = None,
+                         passage_text: Union[str, List[str]],
+                         char_spans: List[List[Tuple[int, int]]] = None,
                          answer_texts: List[str] = None,
-                         passage_tokens: List[Token] = None) -> Instance:
+                         passage_tokens: Union[List[Token], List[List[Token]]] = None) -> Instance:
         # pylint: disable=arguments-differ
         if not passage_tokens:
             passage_tokens = self._tokenizer.tokenize(passage_text)
         char_spans = char_spans or []
 
-        # We need to convert character indices in `passage_text` to token indices in
-        # `passage_tokens`, as the latter is what we'll actually use for supervision.
-        token_spans: List[Tuple[int, int]] = []
-        passage_offsets = [(token.idx, token.idx + len(token.text)) for token in passage_tokens]
-        for char_span_start, char_span_end in char_spans:
-            (span_start, span_end), error = util.char_span_to_token_span(passage_offsets,
-                                                                         (char_span_start, char_span_end))
-            if error:
-                logger.debug("Passage: %s", passage_text)
-                logger.debug("Passage tokens: %s", passage_tokens)
-                logger.debug("Question text: %s", question_text)
-                logger.debug("Answer span: (%d, %d)", char_span_start, char_span_end)
-                logger.debug("Token span: (%d, %d)", span_start, span_end)
-                logger.debug("Tokens in answer: %s", passage_tokens[span_start:span_end + 1])
-                logger.debug("Answer: %s", passage_text[char_span_start:char_span_end])
-            token_spans.append((span_start, span_end))
+        token_spans: List[List[Tuple[int, int]]] = [self.to_token_spans(c_s, p_t) for c_s, p_t in zip(char_spans, passage_tokens)]
 
         if self._multiparagraph:
             return util.make_multi_paragraph_reading_comprehension_instance(
-                    self._tokenizer.tokenize(question_text),
-                    [passage_tokens],
-                    self._token_indexers,
-                    [passage_text],
-                    [token_spans],
-                    answer_texts)
+                self._tokenizer.tokenize(question_text),
+                passage_tokens,
+                self._token_indexers,
+                passage_text,
+                token_spans,
+                answer_texts)
         else:
             return util.make_reading_comprehension_instance(
-                    self._tokenizer.tokenize(question_text),
-                    passage_tokens,
-                    self._token_indexers,
-                    passage_text,
-                    token_spans,
-                    answer_texts)
+                self._tokenizer.tokenize(question_text),
+                passage_tokens,
+                self._token_indexers,
+                passage_text,
+                token_spans,
+                answer_texts)
 
     @classmethod
     def from_params(cls, params: Params) -> 'SquadReader':
